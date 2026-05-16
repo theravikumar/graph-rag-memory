@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+venv*/
+env/
+ENV/
+.env
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Database and FAISS files
+*.db
+*.sqlite
+*.sqlite3
+*.faiss
+memory.db
+
+# Logs and test outputs
+*.log
+TEST_RESULTS.jsonl
+MASSIVE_TEST_LOG.md
+METRICS_REPORT.md
+EVALUATION_REPORT.csv
+
+# Local API Keys
+.env.local
+.env.*

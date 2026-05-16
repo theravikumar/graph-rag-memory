@@ -1,0 +1,330 @@
+[
+  {
+    "id": 0,
+    "type": "statement",
+    "content": "Hey, I wanted to start a new project to keep track of my personal finances. I've been spending way too much lately.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 1,
+    "type": "statement",
+    "content": "Actually, before we get into that, I should mention I'm severely allergic to peanuts. Just adding that to my profile so you know.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 2,
+    "type": "statement",
+    "content": "So back to the finance tracker. I want to build it using Next.js and Tailwind. I really like the glassmorphism aesthetic.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 3,
+    "type": "statement",
+    "content": "Oh wait, my dog is barking at the mailman again. His name is Max, he's a Golden Retriever and he hates Tuesdays for some reason.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 4,
+    "type": "statement",
+    "content": "Anyway, for the database, I think I'll go with PostgreSQL. I've used MongoDB before but relational data just makes more sense for finances.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 5,
+    "type": "query",
+    "content": "What tech stack was I planning to use for the frontend of my finance app?",
+    "ground_truth": "Next.js and Tailwind",
+    "is_temporal_test": true,
+    "injected_turn_id": 2
+  },
+  {
+    "id": 6,
+    "type": "statement",
+    "content": "I also need a name for the app. Maybe something like 'VaultTracker' or 'PennyWise'. I'll think about it.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 7,
+    "type": "statement",
+    "content": "By the way, my secret vault code for my physical safe is 8842. Remind me never to write that down anywhere public.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 8,
+    "type": "statement",
+    "content": "I'm feeling really hungry. I think I might make some pasta for lunch. I've been trying this new garlic and olive oil recipe.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 9,
+    "type": "statement",
+    "content": "Speaking of recipes, I grew up in a small town in Oregon, and my grandma used to make the best blueberry pies.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 10,
+    "type": "query",
+    "content": "Hey, what kind of database did I decide to use for my finance project?",
+    "ground_truth": "PostgreSQL",
+    "is_temporal_test": true,
+    "injected_turn_id": 4
+  },
+  {
+    "id": 11,
+    "type": "statement",
+    "content": "Okay, the pasta was amazing. Back to work. I think I'll add an authentication layer using NextAuth.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 12,
+    "type": "statement",
+    "content": "Actually, someone on Twitter just mentioned that Clerk is way easier to set up than NextAuth. Maybe I'll pivot to Clerk.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 13,
+    "type": "statement",
+    "content": "My all-time favorite movie is The Matrix from 1999. I don't know why I just thought of that, probably because I'm looking at green code on my terminal.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 14,
+    "type": "statement",
+    "content": "I need to go to the grocery store later. I'm completely out of milk and coffee beans.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 15,
+    "type": "query",
+    "content": "What is the name of my dog, and what breed is he?",
+    "ground_truth": "Max, Golden Retriever",
+    "is_temporal_test": true,
+    "injected_turn_id": 3
+  },
+  {
+    "id": 16,
+    "type": "statement",
+    "content": "I just checked my bank account and I spent $400 on takeout last month. This finance tracker app is definitely necessary.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 17,
+    "type": "statement",
+    "content": "I'm going to set my monthly budget goal to $2000 total. If I go over that, the app should send me an angry notification.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 18,
+    "type": "statement",
+    "content": "Just watched a tutorial on how to use D3.js for charts. I'm going to use it to build a beautiful pie chart of my expenses.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 19,
+    "type": "query",
+    "content": "Wait, did I decide to use NextAuth or something else for authentication?",
+    "ground_truth": "Clerk",
+    "is_temporal_test": true,
+    "injected_turn_id": 12
+  },
+  {
+    "id": 20,
+    "type": "statement",
+    "content": "I think I'll name the app 'VaultTracker' after all. It sounds secure.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 21,
+    "type": "statement",
+    "content": "I'm taking a break to play some guitar. I've been learning Spanish Romance, it's such a beautiful classical piece.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 22,
+    "type": "statement",
+    "content": "Ugh, I broke my high E string. I need to order new strings on Amazon. I usually get the Ernie Ball regular slinky.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 23,
+    "type": "query",
+    "content": "What is my absolute favorite movie?",
+    "ground_truth": "The Matrix (1999)",
+    "is_temporal_test": true,
+    "injected_turn_id": 13
+  },
+  {
+    "id": 24,
+    "type": "statement",
+    "content": "Okay, strings ordered. Back to the app. I need to design the database schema. I'll have a Users table and a Transactions table.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 25,
+    "type": "statement",
+    "content": "The Transactions table will have an amount, a date, a category, and a boolean flag for 'is_recurring'.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 26,
+    "type": "statement",
+    "content": "I just realized I should probably add a way to upload receipts. Maybe I can integrate an OCR library later.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 27,
+    "type": "query",
+    "content": "Where did I grow up as a kid?",
+    "ground_truth": "Oregon",
+    "is_temporal_test": true,
+    "injected_turn_id": 9
+  },
+  {
+    "id": 28,
+    "type": "statement",
+    "content": "My friend Sarah just texted me. We're going to a Thai restaurant tonight. I'll have to log that in the new app once it's built.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 29,
+    "type": "statement",
+    "content": "I need to make sure the Thai place doesn't use peanut oil. That would be a disaster.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 30,
+    "type": "query",
+    "content": "Why would it be a disaster if the Thai place uses peanut oil? Do I have a medical issue?",
+    "ground_truth": "Yes, severely allergic to peanuts.",
+    "is_temporal_test": true,
+    "injected_turn_id": 1
+  },
+  {
+    "id": 31,
+    "type": "statement",
+    "content": "I'm going to deploy the app on Vercel. It's just so much easier for Next.js apps than setting up AWS.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 32,
+    "type": "statement",
+    "content": "I also bought a domain name: vaulttracker.io. It cost me $40, but I think it's worth it.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 33,
+    "type": "statement",
+    "content": "I'm thinking of writing a blog post about how I built this. I could post it on Hashnode or Medium.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 34,
+    "type": "query",
+    "content": "What did I decide to name my personal finance app?",
+    "ground_truth": "VaultTracker",
+    "is_temporal_test": true,
+    "injected_turn_id": 20
+  },
+  {
+    "id": 35,
+    "type": "statement",
+    "content": "Actually, I'll go with Hashnode for the blog. It's more developer-focused.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 36,
+    "type": "statement",
+    "content": "It's getting late. I'm going to head to the restaurant to meet Sarah now.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 37,
+    "type": "statement",
+    "content": "Dinner was great! We had Pad Thai (no peanuts!) and split a mango sticky rice.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 38,
+    "type": "query",
+    "content": "What is my monthly budget limit going to be set to in the app?",
+    "ground_truth": "$2000",
+    "is_temporal_test": true,
+    "injected_turn_id": 17
+  },
+  {
+    "id": 39,
+    "type": "statement",
+    "content": "I'm exhausted. I'm going to lock up the house. Time to hit the hay.",
+    "ground_truth": "",
+    "is_temporal_test": false,
+    "injected_turn_id": "N/A"
+  },
+  {
+    "id": 40,
+    "type": "query",
+    "content": "Just to make sure I don't forget it, what is the secret code to my physical vault?",
+    "ground_truth": "8842",
+    "is_temporal_test": true,
+    "injected_turn_id": 7
+  }
+]

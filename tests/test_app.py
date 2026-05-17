@@ -6,7 +6,7 @@ import instructor
 from groq import Groq
 from sentence_transformers import SentenceTransformer
 
-from graph_memory import MemoryClient
+from graphmemo import MemoryClient
 
 # Clean up previous test DB to ensure a fresh graph
 if os.path.exists("memory.db"):

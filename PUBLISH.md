@@ -1,6 +1,6 @@
-# Publishing `graph_memory` to PyPI
+# Publishing `graphmemo` to PyPI
 
-If you want developers around the world to be able to type `pip install graph_memory` (or whatever custom name you choose), you need to publish your package to the **Python Package Index (PyPI)**.
+If you want developers around the world to be able to type `pip install graphmemo` (or whatever custom name you choose), you need to publish your package to the **Python Package Index (PyPI)**.
 
 Follow these exact steps to publish your library directly from this directory.
 
@@ -17,7 +17,7 @@ pip install --upgrade build twine
 ## Step 3: Check your `setup.py`
 Before publishing, make sure your `setup.py` has the correct information.
 1. Open `setup.py`.
-2. Ensure the `name` is unique on PyPI (e.g., if `graph_memory` is taken, you might need to use `graph_memory_agent` or `agentic_memory`).
+2. Ensure the `name` is unique on PyPI (e.g., if `graphmemo` is taken, you might need to use `graphmemo_agent` or `agentic_memory`).
 3. Ensure the `version` is correct (e.g., `"0.1.0"`). Every time you update the code on PyPI, you **must** increase this version number (e.g., `"0.1.1"`).
 
 ## Step 4: Build the Distribution
@@ -38,9 +38,9 @@ python -m twine upload dist/*
 ## Step 6: Test Your Install
 Wait about 2 minutes for PyPI's servers to cache the new package. Then, go to any other folder on your computer and run:
 ```bash
-pip install graph_memory
+pip install graphmemo
 ```
-(Replace `graph_memory` with whatever `name` you put in `setup.py`).
+(Replace `graphmemo` with whatever `name` you put in `setup.py`).
 
 ---
 
@@ -48,4 +48,4 @@ pip install graph_memory
 If you are afraid of messing up the real PyPI repository, you can publish to **TestPyPI** first.
 1. Create an account at [https://test.pypi.org/](https://test.pypi.org/)
 2. Upload using: `python -m twine upload --repository testpypi dist/*`
-3. Install using: `pip install -i https://test.pypi.org/simple/ graph_memory`
+3. Install using: `pip install -i https://test.pypi.org/simple/ graphmemo`

@@ -7,7 +7,7 @@ import instructor
 from groq import Groq
 from sentence_transformers import SentenceTransformer
 
-from graph_memory import MemoryClient
+from graphmemo import MemoryClient
 
 print("--- MASSIVE 5000 QUERY SIMULATOR ---")
 

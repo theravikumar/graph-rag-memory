@@ -1,6 +1,6 @@
 # Graph-Memory API Reference
 
-Welcome to the `graph_memory` documentation. This library is designed to be highly modular and framework-agnostic.
+Welcome to the `graphmemo` documentation. This library is designed to be highly modular and framework-agnostic.
 
 ---
 
@@ -64,7 +64,7 @@ Analyzes the database and built-in telemetry to generate a Markdown file showing
 You can import the underlying data models directly if you are building custom database adapters.
 
 ```python
-from graph_memory import Message, QuantitativeState, MemoryNode
+from graphmemo import Message, QuantitativeState, MemoryNode
 ```
 
 ### `Message`

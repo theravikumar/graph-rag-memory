@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 import instructor
 
-from graph_memory import MemoryClient
+from graphmemo import MemoryClient
 
 # ---------------------------------------------------------
 # 1. Setup Ollama (Local LLM)
@@ -19,7 +19,7 @@ raw_client = OpenAI(
 )
 client = instructor.from_openai(raw_client, mode=instructor.Mode.JSON)
 
-MODEL_NAME = "llama3.2:latest"
+MODEL_NAME = "gemma:2b"
 
 # ---------------------------------------------------------
 # 2. Boilerplate Setup (Embedder & LLM func)

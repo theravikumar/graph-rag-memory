@@ -8,9 +8,9 @@ from sentence_transformers import SentenceTransformer
 from groq import Groq
 import instructor
 
-from graph_memory import MemoryClient
-from graph_memory.db.base import MemoryDatabase
-from graph_memory.schemas import Message, QuantitativeState, MemoryNode
+from graphmemo import MemoryClient
+from graphmemo.db.base import MemoryDatabase
+from graphmemo.schemas import Message, QuantitativeState, MemoryNode
 
 # ---------------------------------------------------------
 # 1. AWS Enterprise Subclassing

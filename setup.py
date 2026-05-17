@@ -5,8 +5,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="graph-rag-memory",
-    version="0.1.0",
+    name="graphmemo",
+    version="0.1.2",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
@@ -16,15 +16,18 @@ setup(
         "sqlalchemy>=2.0.0",
         "langchain-core>=0.1.0",
         "openai>=1.0.0",
-        "groq>=0.4.0",
-        "sentence-transformers>=2.2.2"
+        "groq>=0.4.0"
     ],
+    extras_require={
+        "local": ["sentence-transformers>=2.2.2"],
+        "all": ["sentence-transformers>=2.2.2"]
+    },
     author="Ravi",
     author_email="your.email@example.com",
     description="A BYOK Hierarchical Graph Memory library for AI agents.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/graph-rag-memory",
+    url="https://github.com/yourusername/graphmemo",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

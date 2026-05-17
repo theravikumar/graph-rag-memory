@@ -1,6 +1,6 @@
 # Enterprise Integrations & MCP Examples Guide
 
-This folder (`examples/`) contains concrete implementations demonstrating how to deploy the `graph_memory` library into production enterprise architectures.
+This folder (`examples/`) contains concrete implementations demonstrating how to deploy the `graphmemo` library into production enterprise architectures.
 
 Specifically, these examples showcase two massive concepts:
 1. **Model Context Protocol (MCP)** integration with complex multi-tool architectures.

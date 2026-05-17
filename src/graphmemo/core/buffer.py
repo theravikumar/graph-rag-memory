@@ -82,7 +82,7 @@ class BufferManager:
             oldest_batch = recent_messages[:self.batch_size]
             
             if self.batch_callback:
-                # Fire and forget on a separate thread to maintain < 200ms user latency
+                # Fire and forget on a separate thread to maintain < 400ms user latency
                 bg_thread = threading.Thread(
                     target=self._run_batch_task, 
                     args=(user_id, oldest_batch)

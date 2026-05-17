@@ -43,3 +43,9 @@ EVALUATION_REPORT.csv
 # Local API Keys
 .env.local
 .env.*
+
+# Media / Screenshots
+*.jpg
+*.jpeg
+*.png
+*.webp

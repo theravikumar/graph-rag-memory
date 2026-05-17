@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 from groq import Groq
 import instructor
 
-from graph_memory import MemoryClient
+from graphmemo import MemoryClient
 
 # ---------------------------------------------------------
 # 1. Setup Groq (Cloud LLM)

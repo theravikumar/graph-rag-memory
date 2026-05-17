@@ -12,7 +12,7 @@ from graph_memory import MemoryClient
 # 1. Setup Gemini SDK
 # ---------------------------------------------------------
 if "GEMINI_API_KEY" not in os.environ:
-    os.environ["GEMINI_API_KEY"] = "AIzaSyDn-l8McxqmS3UQk-LU3btoGj-3nKrvE0k"
+    os.environ["GEMINI_API_KEY"] = ""
 
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 

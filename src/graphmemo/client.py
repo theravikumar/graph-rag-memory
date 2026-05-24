@@ -23,7 +23,9 @@ class MemoryClient:
         db: Optional[MemoryDatabase] = None,
         use_query_expansion: bool = True,
         buffer_size: int = 20,
-        batch_size: int = 10
+        batch_size: int = 10,
+        retrieval_top_k: int = 2,
+        history_limit: int = 20
     ):
         self.db = db or LocalMemoryManager()
         self.telemetry = TelemetryManager()
@@ -41,7 +43,14 @@ class MemoryClient:
             self.telemetry.record_write_latency((time.time() - t0) * 1000)
         
         self.constructor = GraphConstructor(self.db, tracked_llm, embed_text)
-        self.router = SemanticRouter(self.db, tracked_llm, embed_text, use_query_expansion)
+        self.router = SemanticRouter(
+            self.db, 
+            tracked_llm, 
+            embed_text, 
+            use_query_expansion,
+            retrieval_top_k=retrieval_top_k,
+            history_limit=history_limit
+        )
         
         self.buffer = BufferManager(
             db=self.db, 

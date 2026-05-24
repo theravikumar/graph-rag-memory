@@ -15,7 +15,9 @@ class SemanticRouter:
         db: MemoryDatabase, 
         llm_generate: Callable[[str, str, Optional[BaseModel]], Any],
         embed_text: Callable[[str], List[float]],
-        use_query_expansion: bool = True
+        use_query_expansion: bool = True,
+        retrieval_top_k: int = 2,
+        history_limit: int = 20
     ):
         """
         :param db: The underlying MemoryDatabase.
@@ -28,6 +30,8 @@ class SemanticRouter:
         self.llm_generate = llm_generate
         self.embed_text = embed_text
         self.use_query_expansion = use_query_expansion
+        self.retrieval_top_k = retrieval_top_k
+        self.history_limit = history_limit
 
     def retrieve_context(self, user_id: str, query: str) -> Dict[str, Any]:
         """
@@ -52,7 +56,7 @@ class SemanticRouter:
             label_vector=label_vector, 
             desc_vector=desc_vector, 
             keyword=query, # Fallback BM25
-            top_k=2
+            top_k=self.retrieval_top_k
         )
         
         nodes = [t[0] for t in top_node_tuples]
@@ -66,7 +70,7 @@ class SemanticRouter:
 
         # 6. Fetch L1 Short-Term Buffer
         # (This just grabs the immediate recent messages from the DB)
-        recent_messages = self.db.get_recent_messages(user_id, limit=20)
+        recent_messages = self.db.get_recent_messages(user_id, limit=self.history_limit)
 
         # 7. Format the return payload
         return {

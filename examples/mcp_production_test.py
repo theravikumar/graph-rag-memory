@@ -9,23 +9,32 @@ from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 from groq import Groq
 import instructor
-import faiss
+
+from graphmemo import MemoryClient
+from graphmemo.schemas import MemoryNode
 
 # ============================================================================
 # 1. Boilerplate & Initialization (LLM, Embedder, Telemetry)
 # ============================================================================
 
-# Ensure Groq API Key is available
 if "GROQ_API_KEY" not in os.environ:
     os.environ["GROQ_API_KEY"] = "your_groq_api_key_here"
 
-# Initialize Instructor-patched Groq for structured outputs
 raw_groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 groq_client = instructor.from_groq(raw_groq_client)
 
-# Initialize lightweight local embedder for fast FAISS lookups
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
-VECTOR_DIM = 384
+
+def llm_func(sys_prompt: str, user_prompt: str, schema: Optional[BaseModel] = None) -> Any:
+    messages = [{"role": "system", "content": sys_prompt}, {"role": "user", "content": user_prompt}]
+    if schema:
+        return groq_client.chat.completions.create(model="llama-3.1-8b-instant", response_model=schema, messages=messages)
+    return raw_groq_client.chat.completions.create(model="llama-3.1-8b-instant", messages=messages).choices[0].message.content
+
+def graphmemo_embed_func(text: str) -> list[float]:
+    return embedder.encode(text).tolist()
+
+memory = MemoryClient(llm_generate=llm_func, embed_text=graphmemo_embed_func, use_query_expansion=False)
 
 class Telemetry:
     """A simple class to track latency and estimated token usage across our parallel pipelines."""
@@ -39,190 +48,187 @@ class Telemetry:
         print(f"  [LATENCY] {step}: {latency:.1f}ms | Tokens: ~{tokens}")
 
 # ============================================================================
-# 2. Local Extension Tables (Tools & Guardrails)
+# 2. Native Graphmemo Seeding (Using SYSTEM namespaces)
 # ============================================================================
-# Instead of polluting the core graphmemo conversational memory, we build 
-# dedicated enterprise FAISS indices for tools and rules here.
 
-# FAISS Indices for Dual-Vector Tool Retrieval
-tool_intent_index = faiss.IndexIDMap(faiss.IndexFlatIP(VECTOR_DIM))      # Vector 1: topic_label (Intent)
-tool_desc_index = faiss.IndexIDMap(faiss.IndexFlatIP(VECTOR_DIM))        # Vector 2: topic_description
-
-# FAISS Index for Guardrails/Rules
-rule_index = faiss.IndexIDMap(faiss.IndexFlatIP(VECTOR_DIM))
-
-# In-memory mock databases for our tables
-mcp_tools_table: Dict[int, Dict[str, Any]] = {}
-mcp_rules_table: Dict[int, Dict[str, Any]] = {}
-
-def embed_func(text: str) -> np.ndarray:
-    """Helper to embed text into a FAISS-compatible numpy array."""
-    return np.array([embedder.encode(text).tolist()], dtype=np.float32)
-
-def seed_enterprise_db():
+def seed_native_graphmemo():
     """
-    Pre-loads our Tools and Guardrails into the standalone DBs.
-    Notice the Dual-Vector setup for Fuel to solve the semantic overlap!
+    Instead of separate databases, we seed Tools and Guardrails natively into 
+    Graphmemo using strict namespaces (user_id = 'SYSTEM_TOOLS' / 'SYSTEM_RULES').
     """
-    # ---------------------------------------------------------
-    # Seed MCP Tools
-    # ---------------------------------------------------------
+    # Check if already seeded to prevent duplication
+    existing_tools = memory.db.get_all_nodes("SYSTEM_TOOLS")
+    if len(existing_tools) > 0:
+        return
+
+    print("[SYSTEM] Seeding native Graphmemo with Tools & Guardrails...")
+
+    # 1. Seed Tools into 'SYSTEM_TOOLS' namespace
     tools = [
         {
-            "id": 1,
-            "topic_label": "fuel_maintenance", # Intent (Vector 1)
-            "topic_description": "Use this tool when you need information about repairing, fixing, or maintaining fuel tanks.", # Description (Vector 2)
-            "api_request_body": {"action": "repair", "target": "{user_query_target}"}, # Dynamic payload template
-            "api_response_body_keys": ["status", "mechanic_assigned", "eta"] # For validation checks
+            "intent": "fuel_maintenance",
+            "desc": "Use this tool when you need information about repairing, fixing, or maintaining fuel tanks.",
+            "state": {
+                "api_request_body": {"action": "repair", "target": "{user_query_target}"},
+                "api_response_body_keys": ["status", "mechanic_assigned", "eta"]
+            }
         },
         {
-            "id": 2,
-            "topic_label": "fuel_reading", # Intent (Vector 1)
-            "topic_description": "Use this tool to get real-time fuel levels, readings, and gallons remaining.", # Description (Vector 2)
-            "api_request_body": {"action": "get_level", "sensor": "{session_sensor_id}"},
-            "api_response_body_keys": ["gallons_remaining", "percentage"]
+            "intent": "fuel_reading",
+            "desc": "Use this tool to get real-time fuel levels, readings, and gallons remaining.",
+            "state": {
+                "api_request_body": {"action": "get_level", "sensor": "{session_sensor_id}"},
+                "api_response_body_keys": ["gallons_remaining", "percentage"]
+            }
         }
     ]
     
     for t in tools:
-        mcp_tools_table[t["id"]] = t
-        # We index BOTH the Intent and the Description for the Tie-Breaker logic!
-        tool_intent_index.add_with_ids(embed_func(t["topic_label"]), np.array([t["id"]]))
-        tool_desc_index.add_with_ids(embed_func(t["topic_description"]), np.array([t["id"]]))
+        node = MemoryNode(
+            user_id="SYSTEM_TOOLS",
+            topic_label=t["intent"],              # Mapped to Intent Vector
+            topic_description=t["desc"],          # Mapped to Description Vector
+            node_type="tool",                     # Identifier
+            summary="",                           # Unused for tools
+            node_state=t["state"],                # Contains our robust execution schemas!
+            label_embedding=graphmemo_embed_func(t["intent"]),
+            description_embedding=graphmemo_embed_func(t["desc"])
+        )
+        memory.db.add_node(node)
 
-    # ---------------------------------------------------------
-    # Seed MCP Guardrails / Rules
-    # ---------------------------------------------------------
+    # 2. Seed Guardrails into 'SYSTEM_RULES' namespace
     rules = [
         {
-            "id": 1,
-            "role_type": "normal_user",
-            "rule_description": "Do not allow users to perform fuel maintenance actions. They can only read fuel levels."
+            "desc": "Do not allow users to perform fuel maintenance actions. They can only read fuel levels.",
+            "state": {"role_type": "normal_user"}
         },
         {
-            "id": 2,
-            "role_type": "all",
-            "rule_description": "Do not answer questions about unrelated topics like cooking or politics."
+            "desc": "Do not answer questions about unrelated topics like cooking or politics.",
+            "state": {"role_type": "all"}
         }
     ]
     
     for r in rules:
-        mcp_rules_table[r["id"]] = r
-        rule_index.add_with_ids(embed_func(r["rule_description"]), np.array([r["id"]]))
+        node = MemoryNode(
+            user_id="SYSTEM_RULES",
+            topic_label="guardrail_rule",
+            topic_description=r["desc"],
+            node_type="guardrail",
+            summary="",
+            node_state=r["state"],
+            label_embedding=graphmemo_embed_func("guardrail_rule"),
+            description_embedding=graphmemo_embed_func(r["desc"])
+        )
+        memory.db.add_node(node)
 
-seed_enterprise_db()
+seed_native_graphmemo()
 
 # ============================================================================
-# 3. Parallel Execution Logic (The Core Pipeline)
+# 3. Parallel Execution Logic (The Native Core Pipeline)
 # ============================================================================
 
 async def run_input_guardrails(query: str, user_role: str) -> Tuple[bool, str]:
     """
-    Runs an ultra-fast semantic check against the Guardrails table.
-    If a rule matches heavily, we block the request. 0 LLM calls!
+    Runs an ultra-fast semantic check natively against Graphmemo.
     """
     start_time = time.time()
     
-    # 1. Embed the user query
-    q_vec = embed_func(query)
-    
-    # 2. Search the Rule Index
-    distances, rule_ids = rule_index.search(q_vec, 1)
+    # 1. Search the 'SYSTEM_RULES' namespace natively
+    q_vec = graphmemo_embed_func(query)
+    # We search the description vector for rule matching
+    matched_rules = memory.db.search_nodes(user_id="SYSTEM_RULES", desc_vector=q_vec, top_k=1)
     
     latency = (time.time() - start_time) * 1000
-    Telemetry.log("Input Guardrail (FAISS)", latency, tokens=0)
+    Telemetry.log("Input Guardrail (Native Graphmemo)", latency, tokens=0)
     
-    if len(rule_ids[0]) > 0 and rule_ids[0][0] != -1:
-        score = distances[0][0]
-        # If the semantic match is very high (> 0.7 IP)
+    if matched_rules:
+        rule_node, score = matched_rules[0]
+        # High semantic match threshold
         if score > 0.7:
-            rule = mcp_rules_table[int(rule_ids[0][0])]
-            # Check Role constraint
-            if rule["role_type"] in ["all", user_role]:
-                return True, f"Blocked by Input Guardrail: {rule['rule_description']}"
+            role_required = rule_node.node_state.get("role_type", "all")
+            if role_required in ["all", user_role]:
+                return True, f"Blocked by Input Guardrail: {rule_node.topic_description}"
     
     return False, "Safe"
 
-async def run_tool_selection(query: str) -> Optional[Dict[str, Any]]:
+async def run_tool_selection(query: str) -> Optional[MemoryNode]:
     """
-    Dual-Vector retrieval. Solves the 'Fuel Reading vs Fuel Maintenance' overlap.
+    Native Dual-Vector retrieval using Graphmemo!
+    Solves the 'Fuel Reading vs Fuel Maintenance' overlap automatically.
     """
     start_time = time.time()
-    q_vec = embed_func(query)
+    q_vec = graphmemo_embed_func(query)
     
-    # We search both the description index AND the intent index
-    desc_dist, desc_ids = tool_desc_index.search(q_vec, 2)
-    int_dist, int_ids = tool_intent_index.search(q_vec, 2)
+    # We execute two searches simultaneously against the 'SYSTEM_TOOLS' namespace
+    # One for Intent (label) and one for Description (desc)
+    desc_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", desc_vector=q_vec, top_k=2)
+    intent_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", label_vector=q_vec, top_k=2)
     
     latency = (time.time() - start_time) * 1000
-    Telemetry.log("Tool Retrieval (Dual FAISS)", latency, tokens=0)
+    Telemetry.log("Tool Retrieval (Native Dual-Vector)", latency, tokens=0)
     
-    # Simplistic tie-breaker: We sum the scores if an ID appears in both, 
-    # prioritizing Intent matches over Description matches.
+    # Consolidate and tie-break scores
     scores = {}
-    for i, t_id in enumerate(desc_ids[0]):
-        if t_id != -1: scores[t_id] = scores.get(t_id, 0) + float(desc_dist[0][i])
-    for i, t_id in enumerate(int_ids[0]):
-        if t_id != -1: scores[t_id] = scores.get(t_id, 0) + float(int_dist[0][i]) * 1.5 # Intent weighting
+    nodes_map = {}
+    
+    for node, score in desc_matches:
+        scores[node.node_id] = scores.get(node.node_id, 0) + score
+        nodes_map[node.node_id] = node
+        
+    for node, score in intent_matches:
+        # Intent carries a 1.5x weight multiplier for tie-breaking
+        scores[node.node_id] = scores.get(node.node_id, 0) + (score * 1.5)
+        nodes_map[node.node_id] = node
         
     if not scores:
         return None
         
-    # Get the highest scoring tool
-    best_tool_id = max(scores.items(), key=lambda x: x[1])[0]
-    best_score = scores[best_tool_id]
+    # Get the highest scoring tool node
+    best_node_id = max(scores.items(), key=lambda x: x[1])[0]
+    best_score = scores[best_node_id]
     
-    # Threshold check: Only return a tool if we are confident (score > 1.0)
     if best_score > 1.0:
-        return mcp_tools_table[best_tool_id]
+        return nodes_map[best_node_id]
     return None
 
-async def execute_tool_payload(tool: Dict[str, Any], query: str) -> Dict[str, Any]:
+async def execute_tool_payload(tool_node: MemoryNode, query: str) -> Dict[str, Any]:
     """
-    Mocks the API execution. 
-    Injects dynamic variables into the Request Body and validates the Response Body keys.
+    Extracts dynamic schemas directly from the native `node_state` JSON field!
     """
     start_time = time.time()
+    state = tool_node.node_state
     
     # 1. Format API Request Body (Dynamic Injection)
-    # We replace the template strings with actual context
-    request_payload = json.dumps(tool["api_request_body"])
-    request_payload = request_payload.replace("{user_query_target}", query.split()[-1]) # Mock extraction
+    request_payload = json.dumps(state["api_request_body"])
+    request_payload = request_payload.replace("{user_query_target}", query.split()[-1]) # Mock
     request_payload = request_payload.replace("{session_sensor_id}", "SENSOR-99X")
     
     # 2. Execute Mock API Call
-    await asyncio.sleep(0.3) # Simulate network latency
+    await asyncio.sleep(0.3) 
     
     # 3. Mock API Response
-    if tool["topic_label"] == "fuel_reading":
+    if tool_node.topic_label == "fuel_reading":
         api_response = {"gallons_remaining": 450, "percentage": "85%"}
     else:
         api_response = {"status": "scheduled", "mechanic_assigned": "Bob", "eta": "2 hours"}
         
-    # 4. Validate API Response against our schema
-    missing_keys = [k for k in tool["api_response_body_keys"] if k not in api_response]
+    # 4. Validate API Response against schema stored in Graphmemo!
+    missing_keys = [k for k in state["api_response_body_keys"] if k not in api_response]
     if missing_keys:
         raise ValueError(f"Tool execution failed. Missing required keys: {missing_keys}")
         
     latency = (time.time() - start_time) * 1000
-    Telemetry.log(f"API Execution ({tool['topic_label']})", latency, tokens=0)
+    Telemetry.log(f"API Execution ({tool_node.topic_label})", latency, tokens=0)
     
     return api_response
 
-async def run_output_guardrails_and_synthesis(query: str, tool_context: str) -> str:
-    """
-    Runs the LLM Synthesis to format the final answer to the user,
-    WHILE running Output Guardrails in parallel to ensure the LLM isn't leaking secrets.
-    """
+async def run_output_guardrails_and_synthesis(query: str, tool_context: str, graph_context: Dict[str, Any]) -> str:
     start_time = time.time()
     
-    # 1. The Synthesis Prompt (combining tools and query)
-    sys_prompt = "You are a helpful industrial agent. Synthesize the tool data into a friendly response."
+    sys_prompt = f"You are a helpful industrial agent. Synthesize the tool data into a friendly response.\n\nLong-Term Memory Facts:\n{graph_context['long_term_graph_context']}\n\nRecent Chat History:\n{graph_context['short_term_history']}"
     user_prompt = f"Tool Output Data: {tool_context}\nUser Query: {query}"
     
-    # 2. Define the tasks we will run in parallel
     async def synthesize_llm():
-        # A blocking LLM call wrapped in a thread so it doesn't block asyncio
         return await asyncio.to_thread(
             lambda: raw_groq_client.chat.completions.create(
                 model="llama-3.1-8b-instant", 
@@ -231,21 +237,17 @@ async def run_output_guardrails_and_synthesis(query: str, tool_context: str) -> 
         )
         
     async def check_output_guardrail():
-        # Imagine this checks for sensitive data (like SSNs or passwords) in the tool output
-        # before we even let the LLM see it, or checking the LLM output as it streams.
-        # For this demo, we run a fast regex/semantic check on the raw tool_context.
         await asyncio.sleep(0.1) 
         if "CONFIDENTIAL" in tool_context:
-            return True # Blocked
-        return False # Safe
+            return True 
+        return False 
         
-    # 3. Run BOTH in parallel
     synthesis_task = asyncio.create_task(synthesize_llm())
     guardrail_task = asyncio.create_task(check_output_guardrail())
     
     is_blocked = await guardrail_task
     if is_blocked:
-        synthesis_task.cancel() # Stop the LLM mid-generation if guardrail fails!
+        synthesis_task.cancel() 
         latency = (time.time() - start_time) * 1000
         Telemetry.log("Parallel Output Guardrail", latency, tokens=0)
         return "I'm sorry, I cannot output that information due to security policies."
@@ -253,7 +255,6 @@ async def run_output_guardrails_and_synthesis(query: str, tool_context: str) -> 
     final_text = await synthesis_task
     
     latency = (time.time() - start_time) * 1000
-    # Estimating tokens: 1 token ~= 4 chars
     estimated_tokens = (len(sys_prompt) + len(user_prompt) + len(final_text)) // 4
     Telemetry.log("Parallel Synthesis & Output Guardrail", latency, tokens=estimated_tokens)
     
@@ -264,12 +265,15 @@ async def run_output_guardrails_and_synthesis(query: str, tool_context: str) -> 
 # ============================================================================
 
 async def process_user_query(query: str, user_role: str = "normal_user"):
+    user_id = f"mock_{user_role}_id"
+    
     print(f"\n==================================================")
     print(f"[USER]: {query}")
     print(f"==================================================")
     
-    # Phase 1: Parallel Input Guardrails & Tool Selection
-    # By running these together, we eliminate sequential latency.
+    memory.add_message(user_id, "user", query)
+    
+    # Phase 1: Parallel Input Guardrails & Tool Selection natively!
     guardrail_task = asyncio.create_task(run_input_guardrails(query, user_role))
     tool_task = asyncio.create_task(run_tool_selection(query))
     
@@ -278,14 +282,14 @@ async def process_user_query(query: str, user_role: str = "normal_user"):
         print(f" [AGENT]: {block_reason}")
         return
         
-    selected_tool = await tool_task
+    selected_tool_node = await tool_task
     
-    # Phase 2: Tool Execution (or Fallback)
+    # Phase 2: Tool Execution
     tool_context = "No tool was used."
-    if selected_tool:
-        print(f"  [TOOL SELECTED] {selected_tool['topic_label']} (via Dual-Vector Tie-Breaker)")
+    if selected_tool_node:
+        print(f"  [TOOL SELECTED] {selected_tool_node.topic_label} (via Native Dual-Vector)")
         try:
-            api_result = await execute_tool_payload(selected_tool, query)
+            api_result = await execute_tool_payload(selected_tool_node, query)
             tool_context = json.dumps(api_result)
         except Exception as e:
             print(f" [TOOL ERROR]: {e}")
@@ -293,13 +297,19 @@ async def process_user_query(query: str, user_role: str = "normal_user"):
     else:
         print(f"  [TOOL SELECTED] None (Standard Chat Fallback)")
 
-    # Phase 3: Parallel Output Guardrails & LLM Synthesis
-    final_response = await run_output_guardrails_and_synthesis(query, tool_context)
+    # Phase 3: Fetch Conversational Memory
+    t_ret = time.time()
+    graph_context = memory.retrieve_context(user_id, query)
+    Telemetry.log("Graphmemo Context Retrieval", (time.time() - t_ret) * 1000, tokens=0)
+
+    # Phase 4: Parallel Synthesis
+    final_response = await run_output_guardrails_and_synthesis(query, tool_context, graph_context)
+    
+    memory.add_message(user_id, "assistant", final_response)
     
     print(f" [AGENT]: {final_response}")
     print(f"\n Total Latency: {Telemetry.total_latency_ms:.1f}ms | Total Estimated Tokens: {Telemetry.total_tokens}")
     
-    # Reset telemetry for next query
     Telemetry.total_latency_ms = 0
     Telemetry.total_tokens = 0
 
@@ -309,15 +319,12 @@ async def process_user_query(query: str, user_role: str = "normal_user"):
 if __name__ == "__main__":
     async def run():
         print("\n--- TEST 1: The 'Fuel Maintenance vs Reading' Overlap ---")
-        # Notice how semantic description overlap won't fool it! It checks intent.
         await process_user_query("Can you check the current fuel reading on the tank?", user_role="normal_user")
         
         print("\n--- TEST 2: Input Guardrail Interception ---")
-        # Normal users are NOT allowed to perform maintenance. This should block instantly (0 LLM calls).
         await process_user_query("Schedule fuel maintenance for the generator.", user_role="normal_user")
         
         print("\n--- TEST 3: App/System Guardrail ---")
-        # Blocks unrelated talk instantly (0 LLM calls)
         await process_user_query("Who is winning the election?", user_role="all")
         
         print("\n--- TEST 4: Fallback to Normal Chat ---")

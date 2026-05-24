@@ -127,14 +127,32 @@ seed_native_graphmemo()
 # 3. Parallel Execution Logic (The Native Core Pipeline)
 # ============================================================================
 
-async def run_input_guardrails(query: str, user_role: str) -> Tuple[bool, str]:
+async def expand_query_async(query: str) -> str:
+    """Uses the LLM to expand a short query into a highly descriptive semantic paragraph."""
+    start_time = time.time()
+    sys_prompt = "You are a query expansion engine. Take the user's short query and expand it into a detailed, descriptive paragraph clarifying intent, synonyms, and context. Output ONLY the expanded query, no conversational filler."
+    
+    expanded_text = await asyncio.to_thread(
+        lambda: raw_groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant", 
+            messages=[{"role": "system", "content": sys_prompt}, {"role": "user", "content": query}]
+        ).choices[0].message.content
+    )
+    
+    latency = (time.time() - start_time) * 1000
+    estimated_tokens = (len(sys_prompt) + len(query) + len(expanded_text)) // 4
+    Telemetry.log("Query Expansion (LLM)", latency, tokens=estimated_tokens)
+    
+    return expanded_text
+
+async def run_input_guardrails(raw_query: str, expanded_query: str, user_role: str) -> Tuple[bool, str]:
     """
     Runs an ultra-fast semantic check natively against Graphmemo.
     """
     start_time = time.time()
     
-    # 1. Search the 'SYSTEM_RULES' namespace natively
-    q_vec = graphmemo_embed_func(query)
+    # 1. Embed the EXPANDED query for Guardrail Rule matching
+    q_vec = graphmemo_embed_func(expanded_query)
     # We search the description vector for rule matching
     matched_rules = memory.db.search_nodes(user_id="SYSTEM_RULES", desc_vector=q_vec, top_k=1)
     
@@ -151,18 +169,22 @@ async def run_input_guardrails(query: str, user_role: str) -> Tuple[bool, str]:
     
     return False, "Safe"
 
-async def run_tool_selection(query: str) -> Optional[MemoryNode]:
+async def run_tool_selection(raw_query: str, expanded_query: str) -> Optional[MemoryNode]:
     """
-    Native Dual-Vector retrieval using Graphmemo!
-    Solves the 'Fuel Reading vs Fuel Maintenance' overlap automatically.
+    Native Dual-Vector retrieval with Split-Query logic!
+    Solves the 'Wife driving' semantic leap problem automatically.
     """
     start_time = time.time()
-    q_vec = graphmemo_embed_func(query)
     
-    # We execute two searches simultaneously against the 'SYSTEM_TOOLS' namespace
-    # One for Intent (label) and one for Description (desc)
-    desc_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", desc_vector=q_vec, top_k=2)
-    intent_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", label_vector=q_vec, top_k=2)
+    # We embed BOTH queries
+    raw_q_vec = graphmemo_embed_func(raw_query)
+    expanded_q_vec = graphmemo_embed_func(expanded_query)
+    
+    # Split-Vector Search:
+    # Description index loves the detailed expanded query
+    desc_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", desc_vector=expanded_q_vec, top_k=2)
+    # Intent index loves the short, raw query
+    intent_matches = memory.db.search_nodes(user_id="SYSTEM_TOOLS", label_vector=raw_q_vec, top_k=2)
     
     latency = (time.time() - start_time) * 1000
     Telemetry.log("Tool Retrieval (Native Dual-Vector)", latency, tokens=0)
@@ -270,12 +292,16 @@ async def process_user_query(query: str, user_role: str = "normal_user"):
     print(f"\n==================================================")
     print(f"[USER]: {query}")
     print(f"==================================================")
-    
+    # Log the user message to conversational memory
     memory.add_message(user_id, "user", query)
     
+    # Phase 0: Query Expansion (Sequential Bottleneck for accuracy)
+    expanded_query = await expand_query_async(query)
+    print(f"  [EXPANDED QUERY]: {expanded_query.strip()}")
+    
     # Phase 1: Parallel Input Guardrails & Tool Selection natively!
-    guardrail_task = asyncio.create_task(run_input_guardrails(query, user_role))
-    tool_task = asyncio.create_task(run_tool_selection(query))
+    guardrail_task = asyncio.create_task(run_input_guardrails(query, expanded_query, user_role))
+    tool_task = asyncio.create_task(run_tool_selection(query, expanded_query))
     
     is_blocked, block_reason = await guardrail_task
     if is_blocked:
